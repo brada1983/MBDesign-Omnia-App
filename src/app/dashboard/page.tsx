@@ -23,23 +23,26 @@ export default async function DashboardPage() {
 
     const totalTasks = openCount + inProgressCount + closedCount
 
-    // Completion time metrics: calculate from tasks that are ZATVOREN
-    // We use the gap between createdAt and updatedAt as a proxy for completion time
+    // Completion time metrics: use actual logged hours from TimeEntries
     const closedTasks = await prisma.task.findMany({
         where: { ...baseWhere, status: 'ZATVOREN' },
-        select: { createdAt: true, updatedAt: true, title: true }
+        select: {
+            title: true,
+            createdAt: true,
+            updatedAt: true,
+            timeEntries: { select: { manualHours: true } }
+        }
     })
 
-    const completionDays = closedTasks.map(t => {
-        const diff = t.updatedAt.getTime() - t.createdAt.getTime()
-        return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24))) // min 1 day
-    })
+    const completionHours = closedTasks.map(t =>
+        t.timeEntries.reduce((sum, e) => sum + (e.manualHours || 0), 0)
+    ).filter(h => h > 0) // only tasks with logged time
 
-    const avgDays = completionDays.length > 0
-        ? Math.round(completionDays.reduce((a, b) => a + b, 0) / completionDays.length)
+    const avgHours = completionHours.length > 0
+        ? Math.round((completionHours.reduce((a, b) => a + b, 0) / completionHours.length) * 100) / 100
         : null
-    const minDays = completionDays.length > 0 ? Math.min(...completionDays) : null
-    const maxDays = completionDays.length > 0 ? Math.max(...completionDays) : null
+    const minHours = completionHours.length > 0 ? Math.min(...completionHours) : null
+    const maxHours = completionHours.length > 0 ? Math.max(...completionHours) : null
 
     // Chart bar widths (percentage of total)
     const chartTotal = Math.max(totalTasks, 1)
@@ -167,44 +170,44 @@ export default async function DashboardPage() {
                         Metrika vremena rješavanja
                     </h2>
 
-                    {completionDays.length === 0 ? (
+                    {completionHours.length === 0 ? (
                         <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '0.875rem' }}>
-                            Nema završenih zadataka za analizu.
+                            Nema završenih zadataka s evidentiranim satima za analizu.
                         </p>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                                 <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '0.75rem' }}>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Prosječno</div>
-                                    <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--secondary-color)' }}>{avgDays}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>dana</div>
+                                    <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--secondary-color)' }}>{avgHours?.toFixed(1)}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>sati</div>
                                 </div>
                                 <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '0.75rem' }}>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Najkraće</div>
-                                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#10b981' }}>{minDays}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>dana</div>
+                                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#10b981' }}>{minHours?.toFixed(1)}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>sati</div>
                                 </div>
                                 <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '0.75rem' }}>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Najduže</div>
-                                    <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--danger-color)' }}>{maxDays}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>dana</div>
+                                    <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--danger-color)' }}>{maxHours?.toFixed(1)}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>sati</div>
                                 </div>
                             </div>
 
                             <div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    Raspon završenih zadataka ({closedCount})
+                                    Utrošeni sati po zadatku ({closedTasks.filter(t => t.timeEntries.reduce((s: number, e: { manualHours: number | null }) => s + (e.manualHours || 0), 0) > 0).length})
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '160px', overflowY: 'auto' }}>
                                     {closedTasks.map((t, i) => {
-                                        const days = Math.max(1, Math.round((t.updatedAt.getTime() - t.createdAt.getTime()) / (1000 * 60 * 60 * 24)))
-                                        const maxD = maxDays || 1
-                                        const pct = Math.round((days / maxD) * 100)
+                                        const hrs = t.timeEntries.reduce((s: number, e: { manualHours: number | null }) => s + (e.manualHours || 0), 0)
+                                        if (hrs === 0) return null
+                                        const pct = Math.round((hrs / (maxHours || 1)) * 100)
                                         return (
                                             <div key={i} style={{ fontSize: '0.8rem' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                                     <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{t.title}</span>
-                                                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{days}d</span>
+                                                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{hrs.toFixed(1)}h</span>
                                                 </div>
                                                 <div style={{ height: '6px', borderRadius: '9999px', backgroundColor: 'var(--bg-color)', overflow: 'hidden' }}>
                                                     <div style={{ height: '100%', width: `${pct}%`, borderRadius: '9999px', background: 'linear-gradient(90deg, #10b981, #059669)' }} />
