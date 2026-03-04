@@ -21,14 +21,6 @@ NETWORK="name=eth0,bridge=vmbr0,ip=dhcp" # Mrežne postavke (dhcp će automatski
 # --- GITHUB POSTAVKE ---
 GITHUB_USER="brada1983"
 GITHUB_REPO="MBDesign-Omnia-App"
-# Zbog privatnog repozitorija moramo koristiti token.
-# Na GitHubu idite na Settings -> Developer Settings -> Personal access tokens -> Tokens (classic) -> Generate new token
-read -p "Unesite Vaš GitHub Personal Access Token (PAT): " GITHUB_TOKEN
-
-if [ -z "$GITHUB_TOKEN" ]; then
-    echo "Greška: GitHub Token je obavezan za privatne repozitorije!"
-    exit 1
-fi
 
 # 1. Preuzimanje Debian 12 (Bookworm) template-a ako već ne postoji
 echo "Provjeravam lokalne LXC templateove..."
@@ -69,8 +61,8 @@ pct exec $CTID -- bash -c "apt-get install -y nodejs"
 pct exec $CTID -- bash -c "npm install -g pm2"
 
 # 5. Preuzimanje aplikacije s GitHub-a u '/opt/omnia'
-echo "Kloniram privatni GitHub repozitorij..."
-pct exec $CTID -- bash -c "git clone https://${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_REPO}.git /opt/omnia"
+echo "Kloniram veřejni (public) GitHub repozitorij..."
+pct exec $CTID -- bash -c "git clone https://github.com/${GITHUB_USER}/${GITHUB_REPO}.git /opt/omnia"
 
 # 6. Dodavanje .env datoteke i instalacija NPM modula
 echo "Podešavam okruženje i .env datoteku..."
