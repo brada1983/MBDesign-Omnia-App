@@ -11,12 +11,11 @@
 # --- KONFIGURACIJA KONTEJNERA ---
 CTID=150                             # ID LXC Kontejnera (npr. 150)
 HOSTNAME="omnia-app"                 # Ime kontejnera
-PASSWORD="ProxmoxSecurePassword123"  # Root lozinka za kontejner (OBAVEZNO PROMIJENITE)
 CORES=2                              # Broj CPU jezgri
-MEMORY=2048                          # Količina RAM memorije u MB
+MEMORY=4096                          # Količina RAM memorije u MB
 SWAP=512                             # Količina SWAP memorije u MB
 STORAGE="local-lvm"                  # Ime Proxmox storage-a (često local-lvm ili local-zfs)
-DISK_SIZE="8G"                       # Veličina diska
+DISK_SIZE="64G"                      # Veličina diska
 NETWORK="name=eth0,bridge=vmbr0,ip=dhcp" # Mrežne postavke (dhcp će automatski dodijeliti IP)
 
 # --- GITHUB POSTAVKE ---
@@ -47,7 +46,6 @@ echo "Koristit ću template: $TEMPLATE"
 echo "Kreiram LXC kontejner $CTID..."
 pct create $CTID $TEMPLATE \
     --hostname $HOSTNAME \
-    --password $PASSWORD \
     --cores $CORES \
     --memory $MEMORY \
     --swap $SWAP \
