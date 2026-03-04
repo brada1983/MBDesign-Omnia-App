@@ -10,16 +10,23 @@ export async function GET(req: NextRequest) {
 
     try {
         const user = await prisma.user.findUnique({
-            where: { id: session.user.id }
+            where: { id: session.user.id },
+            include: {
+                notificationPrefs: {
+                    include: {
+                        targetUser: {
+                            select: { id: true, name: true, email: true }
+                        }
+                    }
+                }
+            }
         })
 
         if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
         return NextResponse.json({
             email: user.email,
-            notifyOnTaskCreate: user.notifyOnTaskCreate,
-            notifyOnTaskUpdate: user.notifyOnTaskUpdate,
-            notifyOnTaskClose: user.notifyOnTaskClose,
+            notificationPrefs: user.notificationPrefs
         })
     } catch (error) {
         return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
@@ -32,13 +39,9 @@ export async function PUT(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { email, password, notifyOnTaskCreate, notifyOnTaskUpdate, notifyOnTaskClose } = body
+        const { email, password, notificationPrefs } = body // notificationPrefs is an array of { targetUserId, notifyOnCreate, notifyOnUpdate, notifyOnClose }
 
-        const updateData: any = {
-            notifyOnTaskCreate: Boolean(notifyOnTaskCreate),
-            notifyOnTaskUpdate: Boolean(notifyOnTaskUpdate),
-            notifyOnTaskClose: Boolean(notifyOnTaskClose),
-        }
+        const updateData: any = {}
 
         if (email) {
             updateData.email = email
@@ -48,13 +51,41 @@ export async function PUT(req: NextRequest) {
             updateData.password = await bcrypt.hash(password, 10)
         }
 
-        const updatedUser = await prisma.user.update({
-            where: { id: session.user.id },
-            data: updateData
-        })
+        // Uredi password i email
+        if (Object.keys(updateData).length > 0) {
+            await prisma.user.update({
+                where: { id: session.user.id },
+                data: updateData
+            })
+        }
+
+        // Uredi notificationPrefs ukoliko su primljeni
+        if (Array.isArray(notificationPrefs)) {
+            // First, delete potentially removed preferences or reset them
+            await prisma.notificationPreference.deleteMany({
+                where: { subscriberId: session.user.id }
+            });
+
+            // Re-insert the new preferences
+            if (notificationPrefs.length > 0) {
+                const newPrefs = notificationPrefs.map((pref: any) => ({
+                    subscriberId: session.user.id,
+                    targetUserId: pref.targetUserId,
+                    notifyOnCreate: pref.notifyOnCreate,
+                    notifyOnUpdate: pref.notifyOnUpdate,
+                    notifyOnClose: pref.notifyOnClose
+                }));
+
+                await prisma.notificationPreference.createMany({
+                    data: newPrefs
+                });
+            }
+        }
+
 
         return NextResponse.json({ success: true })
     } catch (error) {
+        console.error("Failed to update settings:", error)
         return NextResponse.json({ error: "Failed to update settings" }, { status: 500 })
     }
 }

@@ -11,37 +11,60 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email                        String    @unique
-  password                     String
-  role                         String    @default("USER") // ADMIN for Marko
-  createdAt                    DateTime  @default(now())
-  updatedAt                    DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  role      String   @default("USER") // ADMIN for Marko
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Notification Preferences
-  notifyOnTaskCreate           Boolean   @default(false)
-  notifyOnTaskUpdate           Boolean   @default(false)
-  notifyOnTaskClose            Boolean   @default(false)
+  // List of preferences where this user is the SUBSCRIBER
+  notificationPrefs NotificationPreference[] @relation("SubscriberToPreference")
 
-  taskLogs                     TaskLog[]
-  timeEntries                  TimeEntry[]
-  attachments                  Attachment[]
-  notifications                Notification[]
+  // List of preferences where this user is the TARGET (others are listening to them)
+  targetedByPrefs NotificationPreference[] @relation("TargetUserToPreference")
+
+  taskLogs      TaskLog[]
+  timeEntries   TimeEntry[]
+  attachments   Attachment[]
+  notifications Notification[]
+}
+
+model NotificationPreference {
+  id String @id @default(cuid())
+
+  // The user who WANTS to be notified
+  subscriberId String
+  subscriber   User   @relation("SubscriberToPreference", fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  // The user whose actions are being watched
+  targetUserId String
+  targetUser   User   @relation("TargetUserToPreference", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  // Which specific actions they want to know about from this target user
+  notifyOnCreate Boolean @default(false)
+  notifyOnUpdate Boolean @default(false)
+  notifyOnClose  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subscriberId, targetUserId])
 }
 
 model Task {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   title         String
   description   String?
-  category      String    // e.g. marketing, IT
-  status        String    @default("OTVOREN") // OTVOREN or ZATVOREN
+  category      String // e.g. marketing, IT
+  status        String       @default("OTVOREN") // OTVOREN or ZATVOREN
   deadline      DateTime?
   assignedHours Float?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   deletedAt     DateTime?
-  removedBy     String?   // User name or email who removed it
+  removedBy     String? // User name or email who removed it
   logs          TaskLog[]
   timeEntries   TimeEntry[]
   attachments   Attachment[]

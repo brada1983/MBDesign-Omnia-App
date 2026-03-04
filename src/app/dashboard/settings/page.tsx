@@ -14,7 +14,11 @@ export default async function SettingsPage() {
                 Ovdje možete upravljati svojim podacima za prijavu i e-mail notifikacijama.
             </p>
 
-            <SettingsClient userEmail={session?.user?.email || ''} userRole={session?.user?.role || 'USER'} />
+            <SettingsClient
+                userEmail={session?.user?.email || ''}
+                userRole={session?.user?.role || 'USER'}
+                currentUserId={session?.user?.id || ''}
+            />
         </div>
     )
 }

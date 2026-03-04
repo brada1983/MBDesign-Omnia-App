@@ -47,11 +47,16 @@ export async function POST(req: NextRequest) {
             }
         })
 
-        // Fetch users who want to be notified
+        // Fetch users who want to be notified when THIS specific user creates a task
         const notifyUsers = await prisma.user.findMany({
             where: {
-                notifyOnTaskCreate: true,
-                id: { not: session.user.id } // Don't notify the person who created it
+                id: { not: session.user.id }, // Don't notify the person who created it
+                notificationPrefs: {
+                    some: {
+                        targetUserId: session.user.id,
+                        notifyOnCreate: true
+                    }
+                }
             }
         })
 

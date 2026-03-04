@@ -16,6 +16,10 @@ export function Sidebar() {
         { label: 'Postavke', href: '/dashboard/settings', icon: '⚙️' },
     ]
 
+    if (session?.user?.role === 'ADMIN') {
+        navItems.push({ label: 'Korisnici', href: '/dashboard/users', icon: '👥' })
+    }
+
     return (
         <aside className="sidebar">
             <div style={{ marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>

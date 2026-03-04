@@ -39,8 +39,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Notify users
         const notifyUsers = await prisma.user.findMany({
             where: {
-                notifyOnTaskUpdate: true,
-                id: { not: session.user.id }
+                id: { not: session.user.id },
+                notificationPrefs: {
+                    some: {
+                        targetUserId: session.user.id,
+                        notifyOnUpdate: true
+                    }
+                }
             }
         })
 

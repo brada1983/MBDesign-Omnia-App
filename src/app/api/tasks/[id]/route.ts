@@ -20,11 +20,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         })
 
         // Fetch users who want to be notified
-        const notifyField = body.status === 'ZATVOREN' ? 'notifyOnTaskClose' : 'notifyOnTaskUpdate'
+        const notifyField = body.status === 'ZATVOREN' ? 'notifyOnClose' : 'notifyOnUpdate'
         const notifyUsers = await prisma.user.findMany({
             where: {
-                [notifyField]: true,
-                id: { not: session.user.id }
+                id: { not: session.user.id },
+                notificationPrefs: {
+                    some: {
+                        targetUserId: session.user.id,
+                        [notifyField]: true
+                    }
+                }
             }
         })
 
@@ -62,8 +67,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         // Notify users
         const notifyUsers = await prisma.user.findMany({
             where: {
-                notifyOnTaskUpdate: true,
-                id: { not: session.user.id }
+                id: { not: session.user.id },
+                notificationPrefs: {
+                    some: {
+                        targetUserId: session.user.id,
+                        notifyOnUpdate: true
+                    }
+                }
             }
         })
 
