@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email                        String    @unique
+  password                     String
+  role                         String    @default("USER") // ADMIN for Marko
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  // Notification Preferences
+  notifyOnTaskCreate           Boolean   @default(false)
+  notifyOnTaskUpdate           Boolean   @default(false)
+  notifyOnTaskClose            Boolean   @default(false)
+
+  taskLogs                     TaskLog[]
+  timeEntries                  TimeEntry[]
+  attachments                  Attachment[]
+  notifications                Notification[]
+}
+
+model Task {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  category      String    // e.g. marketing, IT
+  status        String    @default("OTVOREN") // OTVOREN or ZATVOREN
+  deadline      DateTime?
+  assignedHours Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  removedBy     String?   // User name or email who removed it
+  logs          TaskLog[]
+  timeEntries   TimeEntry[]
+  attachments   Attachment[]
+}
+
+model TaskLog {
+  id        String   @id @default(cuid())
+  content   String
+  status    String?
+  createdAt DateTime @default(now())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  startTime   DateTime?
+  endTime     DateTime?
+  manualHours Float?
+  createdAt   DateTime  @default(now())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  fileUrl   String
+  createdAt DateTime @default(now())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
