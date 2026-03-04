@@ -153,61 +153,63 @@ export function SettingsClient({ userEmail, userRole, currentUserId }: { userEma
                     </div>
                 </div>
 
-                {/* Granular Notification Preferences */}
-                <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>E-mail Notifikacije</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.875rem' }}>
-                        Odaberite od kojih kolega želite primati obavijesti i za koje točno radnje.
-                    </p>
+                {/* Granular Notification Preferences - Admin Only */}
+                {userRole === 'ADMIN' && (
+                    <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>E-mail Notifikacije</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.875rem' }}>
+                            Odaberite od kojih kolega želite primati obavijesti i za koje točno radnje.
+                        </p>
 
-                    {allUsers.length === 0 ? (
-                        <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Nema drugih korisnika u sustavu od kojih biste mogli primati obavijesti.</p>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {allUsers.map(user => (
-                                <div key={user.id} style={{
-                                    padding: '1rem',
-                                    backgroundColor: 'rgba(255,255,255,0.03)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '0.75rem',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '1rem'
-                                }}>
-                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                                        👤 {user.name || user.email}
+                        {allUsers.length === 0 ? (
+                            <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Nema drugih korisnika u sustavu od kojih biste mogli primati obavijesti.</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {allUsers.map(user => (
+                                    <div key={user.id} style={{
+                                        padding: '1rem',
+                                        backgroundColor: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '0.75rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '1rem'
+                                    }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                                            👤 {user.name || user.email}
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={getPref(user.id, 'notifyOnCreate')}
+                                                    onChange={e => handlePreferenceChange(user.id, 'notifyOnCreate', e.target.checked)}
+                                                />
+                                                <span style={{ fontSize: '0.875rem' }}>Kreiranje novog zadatka</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={getPref(user.id, 'notifyOnUpdate')}
+                                                    onChange={e => handlePreferenceChange(user.id, 'notifyOnUpdate', e.target.checked)}
+                                                />
+                                                <span style={{ fontSize: '0.875rem' }}>Ažuriranje (radni nalazi, sati)</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={getPref(user.id, 'notifyOnClose')}
+                                                    onChange={e => handlePreferenceChange(user.id, 'notifyOnClose', e.target.checked)}
+                                                />
+                                                <span style={{ fontSize: '0.875rem' }}>Zatvaranje zadatka</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={getPref(user.id, 'notifyOnCreate')}
-                                                onChange={e => handlePreferenceChange(user.id, 'notifyOnCreate', e.target.checked)}
-                                            />
-                                            <span style={{ fontSize: '0.875rem' }}>Kreiranje novog zadatka</span>
-                                        </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={getPref(user.id, 'notifyOnUpdate')}
-                                                onChange={e => handlePreferenceChange(user.id, 'notifyOnUpdate', e.target.checked)}
-                                            />
-                                            <span style={{ fontSize: '0.875rem' }}>Ažuriranje (radni nalazi, sati)</span>
-                                        </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={getPref(user.id, 'notifyOnClose')}
-                                                onChange={e => handlePreferenceChange(user.id, 'notifyOnClose', e.target.checked)}
-                                            />
-                                            <span style={{ fontSize: '0.875rem' }}>Zatvaranje zadatka</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     <button type="submit" className="button button-primary" disabled={isSaving}>

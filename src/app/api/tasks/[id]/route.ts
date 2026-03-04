@@ -11,6 +11,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     try {
         const body = await req.json()
+
+        const existingTask = await prisma.task.findUnique({ where: { id } })
+        if (!existingTask) return NextResponse.json({ error: "Task not found" }, { status: 404 })
+
+        if (session.user.role !== 'ADMIN' && existingTask.status !== 'OTVOREN') {
+            return NextResponse.json({ error: "Cannot edit tasks that are in progress or closed" }, { status: 403 })
+        }
+
         const task = await prisma.task.update({
             where: { id },
             data: {
@@ -21,21 +29,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         // Fetch users who want to be notified
         const notifyField = body.status === 'ZATVOREN' ? 'notifyOnClose' : 'notifyOnUpdate'
-        const notifyUsers = await prisma.user.findMany({
+        const prefs = await prisma.notificationPreference.findMany({
             where: {
-                id: { not: session.user.id },
-                notificationPrefs: {
-                    some: {
-                        targetUserId: session.user.id,
-                        [notifyField]: true
-                    }
-                }
-            }
+                targetUserId: session.user.id,
+                [notifyField]: true,
+                subscriber: { id: { not: session.user.id } }
+            },
+            include: { subscriber: { select: { email: true, name: true } } }
         })
 
-        for (const user of notifyUsers) {
+        for (const pref of prefs) {
             await sendEmailNotification(
-                user.email,
+                pref.subscriber.email,
                 `Zadatak ${body.status === 'ZATVOREN' ? 'zatvoren' : 'ažuriran'}: ${task.title}`,
                 `<p>Korisnik <strong>${session.user.name || session.user.email}</strong> je ${body.status === 'ZATVOREN' ? 'zatvorio' : 'ažurirao'} zadatak: ${task.title}.</p>`
             )
@@ -56,6 +61,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         const task = await prisma.task.findUnique({ where: { id } })
         if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 })
 
+        if (session.user.role !== 'ADMIN' && task.status !== 'OTVOREN') {
+            return NextResponse.json({ error: "Cannot delete tasks that are in progress or closed" }, { status: 403 })
+        }
+
         const deletedTask = await prisma.task.update({
             where: { id },
             data: {
@@ -65,21 +74,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         })
 
         // Notify users
-        const notifyUsers = await prisma.user.findMany({
+        const deletePrefs = await prisma.notificationPreference.findMany({
             where: {
-                id: { not: session.user.id },
-                notificationPrefs: {
-                    some: {
-                        targetUserId: session.user.id,
-                        notifyOnUpdate: true
-                    }
-                }
-            }
+                targetUserId: session.user.id,
+                notifyOnUpdate: true,
+                subscriber: { id: { not: session.user.id } }
+            },
+            include: { subscriber: { select: { email: true, name: true } } }
         })
 
-        for (const user of notifyUsers) {
+        for (const pref of deletePrefs) {
             await sendEmailNotification(
-                user.email,
+                pref.subscriber.email,
                 `Zadatak uklonjen: ${task.title}`,
                 `<p>Korisnik <strong>${session.user.name || session.user.email}</strong> je označio zadatak "${task.title}" kao uklonjen.</p>`
             )

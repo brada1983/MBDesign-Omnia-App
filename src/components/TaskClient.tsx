@@ -175,7 +175,7 @@ export function TaskClient({ initialTasks, isAdmin }: { initialTasks: Task[], is
                                     <Link href={`/dashboard/tasks/${task.id}`} className="btn" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
                                         Detalji
                                     </Link>
-                                    {!task.deletedAt && (
+                                    {!task.deletedAt && (isAdmin || task.status === 'OTVOREN') && (
                                         <button
                                             onClick={() => handleDelete(task.id)}
                                             className="btn"

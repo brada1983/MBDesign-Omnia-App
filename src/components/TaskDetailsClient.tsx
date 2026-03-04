@@ -8,7 +8,7 @@ export function TaskDetailsClient({ task, currentUserRole }: { task: any, curren
 
     // Radni Nalazi Form
     const [logContent, setLogContent] = useState('')
-    const [logStatus, setLogStatus] = useState('U tijeku')
+    const [logStatus, setLogStatus] = useState(currentUserRole === 'ADMIN' ? 'U tijeku' : 'Bilješka serviseru')
     const [isLogging, setIsLogging] = useState(false)
 
     // Time Tracking 
@@ -144,15 +144,17 @@ export function TaskDetailsClient({ task, currentUserRole }: { task: any, curren
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Dnevnik rada (Radni nalazi)</h2>
 
                     <form onSubmit={handleLogSubmit} style={{ marginBottom: '2rem', backgroundColor: 'var(--bg-color)', padding: '1.5rem', borderRadius: '1rem' }}>
-                        <div className="form-group">
-                            <label>Status</label>
-                            <select className="input-field" value={logStatus} onChange={e => setLogStatus(e.target.value)}>
-                                <option>U tijeku</option>
-                                <option>Završena faza</option>
-                                <option>Čekamo odgovor klijenata</option>
-                                <option>Dovršeno</option>
-                            </select>
-                        </div>
+                        {currentUserRole === 'ADMIN' && (
+                            <div className="form-group">
+                                <label>Status</label>
+                                <select className="input-field" value={logStatus} onChange={e => setLogStatus(e.target.value)}>
+                                    <option>U tijeku</option>
+                                    <option>Završena faza</option>
+                                    <option>Čekamo odgovor klijenata</option>
+                                    <option>Dovršeno</option>
+                                </select>
+                            </div>
+                        )}
                         <div className="form-group">
                             <label>Novi nalaz / Bilješka</label>
                             <textarea
@@ -230,94 +232,98 @@ export function TaskDetailsClient({ task, currentUserRole }: { task: any, curren
 
             {/* Right Column: Time Tracking & Admin */}
             <div>
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '1.5rem', backgroundColor: task.status === 'ZATVOREN' ? 'rgba(16, 185, 129, 0.05)' : 'var(--surface-color)', border: `1px solid ${task.status === 'ZATVOREN' ? '#10b981' : 'var(--border-color)'}` }}>
-                    <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Upravljanje Zadatkom</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Trenutni status:</span>
-                            <div style={{ fontWeight: 700, color: task.status === 'ZATVOREN' ? '#10b981' : 'var(--text-primary)' }}>
-                                {task.status}
-                            </div>
-                        </div>
-                        <button
-                            className="btn"
-                            onClick={handleToggleStatus}
-                            disabled={isUpdatingStatus}
-                            style={{
-                                backgroundColor: task.status === 'ZATVOREN' ? 'var(--bg-color)' : '#10b981',
-                                color: task.status === 'ZATVOREN' ? 'var(--text-primary)' : 'white',
-                                border: `1px solid ${task.status === 'ZATVOREN' ? 'var(--border-color)' : 'transparent'}`,
-                                fontSize: '0.875rem'
-                            }}
-                        >
-                            {isUpdatingStatus ? 'Spremanje...' : task.status === 'ZATVOREN' ? 'Ponovno Otvori' : 'Zatvori Zadatak'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '1.5rem', borderTop: '4px solid var(--secondary-color)' }}>
-                    <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>Utrošeno Vrijeme</h2>
-
-                    <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>
-                        {totalHoursLogged.toFixed(2)} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>sati ukupno</span>
-                    </div>
-
-                    <div style={{ backgroundColor: 'var(--bg-color)', padding: '1.5rem', borderRadius: '1rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: isStopwatchRunning ? 'var(--accent-color)' : 'var(--text-primary)', marginBottom: '1rem' }}>
-                            {formatTime(stopwatchSeconds)}
-                        </div>
-                        <button
-                            className="btn"
-                            onClick={handleToggleStopwatch}
-                            disabled={isSavingTime}
-                            style={{
-                                width: '100%',
-                                backgroundColor: isStopwatchRunning ? 'rgba(239, 68, 68, 0.1)' : 'var(--accent-color)',
-                                color: isStopwatchRunning ? 'var(--danger-color)' : 'white',
-                            }}
-                        >
-                            {isSavingTime ? 'Spremanje...' : isStopwatchRunning ? 'Zaustavi & Spremi' : 'Pokreni Štopericu'}
-                        </button>
-                    </div>
-
-                    <form onSubmit={handleManualTimeSave}>
-                        <div className="form-group">
-                            <label>Ručni unos (sati)</label>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    className="input-field"
-                                    placeholder="npr. 2.5"
-                                    value={manualHours}
-                                    onChange={e => setManualHours(e.target.value)}
-                                    style={{ flex: 1 }}
-                                />
-                                <button type="submit" className="btn btn-primary" disabled={isSavingTime || !manualHours}>
-                                    C
+                {currentUserRole === 'ADMIN' && (
+                    <>
+                        <div className="glass" style={{ padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '1.5rem', backgroundColor: task.status === 'ZATVOREN' ? 'rgba(16, 185, 129, 0.05)' : 'var(--surface-color)', border: `1px solid ${task.status === 'ZATVOREN' ? '#10b981' : 'var(--border-color)'}` }}>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Upravljanje Zadatkom</h2>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Trenutni status:</span>
+                                    <div style={{ fontWeight: 700, color: task.status === 'ZATVOREN' ? '#10b981' : 'var(--text-primary)' }}>
+                                        {task.status}
+                                    </div>
+                                </div>
+                                <button
+                                    className="btn"
+                                    onClick={handleToggleStatus}
+                                    disabled={isUpdatingStatus}
+                                    style={{
+                                        backgroundColor: task.status === 'ZATVOREN' ? 'var(--bg-color)' : '#10b981',
+                                        color: task.status === 'ZATVOREN' ? 'var(--text-primary)' : 'white',
+                                        border: `1px solid ${task.status === 'ZATVOREN' ? 'var(--border-color)' : 'transparent'}`,
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    {isUpdatingStatus ? 'Spremanje...' : task.status === 'ZATVOREN' ? 'Ponovno Otvori' : 'Zatvori Zadatak'}
                                 </button>
                             </div>
                         </div>
-                    </form>
 
-                    {/* Time logs history */}
-                    <div style={{ marginTop: '2rem' }}>
-                        <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1rem', textTransform: 'uppercase' }}>Povijest upisa</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
-                            {task.timeEntries.map((entry: any) => (
-                                <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', padding: '0.5rem', backgroundColor: 'var(--bg-color)', borderRadius: '0.5rem' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>
-                                        {new Date(entry.createdAt).toLocaleDateString('hr-HR')}
-                                    </span>
-                                    <strong style={{ color: 'var(--text-primary)' }}>
-                                        {entry.manualHours}h by {entry.user.name?.split(' ')[0] || 'Korisnik'}
-                                    </strong>
+                        <div className="glass" style={{ padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '1.5rem', borderTop: '4px solid var(--secondary-color)' }}>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>Utrošeno Vrijeme</h2>
+
+                            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>
+                                {totalHoursLogged.toFixed(2)} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>sati ukupno</span>
+                            </div>
+
+                            <div style={{ backgroundColor: 'var(--bg-color)', padding: '1.5rem', borderRadius: '1rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: isStopwatchRunning ? 'var(--accent-color)' : 'var(--text-primary)', marginBottom: '1rem' }}>
+                                    {formatTime(stopwatchSeconds)}
                                 </div>
-                            ))}
+                                <button
+                                    className="btn"
+                                    onClick={handleToggleStopwatch}
+                                    disabled={isSavingTime}
+                                    style={{
+                                        width: '100%',
+                                        backgroundColor: isStopwatchRunning ? 'rgba(239, 68, 68, 0.1)' : 'var(--accent-color)',
+                                        color: isStopwatchRunning ? 'var(--danger-color)' : 'white',
+                                    }}
+                                >
+                                    {isSavingTime ? 'Spremanje...' : isStopwatchRunning ? 'Zaustavi & Spremi' : 'Pokreni Štopericu'}
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleManualTimeSave}>
+                                <div className="form-group">
+                                    <label>Ručni unos (sati)</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            min="0"
+                                            className="input-field"
+                                            placeholder="npr. 2.5"
+                                            value={manualHours}
+                                            onChange={e => setManualHours(e.target.value)}
+                                            style={{ flex: 1 }}
+                                        />
+                                        <button type="submit" className="btn btn-primary" disabled={isSavingTime || !manualHours}>
+                                            C
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            {/* Time logs history */}
+                            <div style={{ marginTop: '2rem' }}>
+                                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1rem', textTransform: 'uppercase' }}>Povijest upisa</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                                    {task.timeEntries.map((entry: any) => (
+                                        <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', padding: '0.5rem', backgroundColor: 'var(--bg-color)', borderRadius: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>
+                                                {new Date(entry.createdAt).toLocaleDateString('hr-HR')}
+                                            </span>
+                                            <strong style={{ color: 'var(--text-primary)' }}>
+                                                {entry.manualHours}h by {entry.user.name?.split(' ')[0] || 'Korisnik'}
+                                            </strong>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     )
