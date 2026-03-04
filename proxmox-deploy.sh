@@ -111,7 +111,42 @@ pct exec $CTID -- bash -c "pm2 save"
 # Postavljanje PM2 da se pali prilikom restarta kontejnera
 pct exec $CTID -- bash -c "pm2 startup systemd -u root --hp /root && pm2 save"
 
-# 10. Prikupljanje IP Adrese
+# 10. Kreiranje skripte za ažuriranje (update-app.sh)
+echo "Kreiram skriptu za automatsko ažuriranje..."
+pct exec $CTID -- bash -c "cat << 'EOF' > /root/update-app.sh
+#!/usr/bin/env bash
+echo '================================================================='
+echo ' ZAPOČINJEM AŽURIRANJE SUSTAVA I APLIKACIJE'
+echo '================================================================='
+echo '[1/5] Ažuriram Debian pakete...'
+apt-get update -y && apt-get upgrade -y && apt-get autoremove -y
+
+echo '[2/5] Provjeravam novosti s GitHuba...'
+cd /opt/omnia
+git stash
+GIT_PULL_OUTPUT=\$(git pull origin main)
+
+if [[ \$GIT_PULL_OUTPUT == *'Already up to date.'* ]]; then
+    echo 'Kod aplikacije je već na zadnjoj verziji. Preskačem build aplikacije.'
+else
+    echo 'Pronađen je novi kod! Radim instalaciju zavisnosti i build...'
+    echo '[3/5] Instaliram NPM pakete...'
+    npm install
+    echo '[4/5] Osvježavam Prisma bazu podataka...'
+    npx prisma generate
+    npx prisma db push
+    echo '[5/5] Pokrećem Next.js Production Build...'
+    npm run build
+    echo '[+] Ponovno pokrećem aplikaciju unutar PM2...'
+    pm2 restart omnia-app
+fi
+echo '================================================================='
+echo '✅ AŽURIRANJE JE ZAVRŠENO!'
+echo '================================================================='
+EOF"
+pct exec $CTID -- bash -c "chmod +x /root/update-app.sh"
+
+# 11. Prikupljanje IP Adrese
 sleep 2 # Dajemo malo vremena da se servisi poslože
 LXC_IP=$(pct exec $CTID -- ip -4 -o addr show eth0 | awk '{print $4}' | cut -d "/" -f 1)
 
@@ -132,5 +167,7 @@ echo "Za detaljne postavke unutar kontejnera upišite:"
 echo "pct enter $CTID"
 echo "cd /opt/omnia"
 echo "nano .env (Za dodavanje SMTP lozinke)"
-echo "pm2 restart omnia-app"
+echo ""
+echo "Za ažuriranje sustava i aplikacije u budućnosti upišite:"
+echo "pct exec $CTID -- /root/update-app.sh"
 echo "================================================================="
