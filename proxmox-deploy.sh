@@ -14,13 +14,19 @@ HOSTNAME="omnia-app"                 # Ime kontejnera
 CORES=2                              # Broj CPU jezgri
 MEMORY=4096                          # Količina RAM memorije u MB
 SWAP=512                             # Količina SWAP memorije u MB
-STORAGE="local-lvm"                  # Ime Proxmox storage-a (često local-lvm ili local-zfs)
 DISK_SIZE="64"                       # Veličina diska u GB (samo broj)
 NETWORK="name=eth0,bridge=vmbr0,ip=dhcp" # Mrežne postavke (dhcp će automatski dodijeliti IP)
 
 # --- GITHUB POSTAVKE ---
 GITHUB_USER="brada1983"
 GITHUB_REPO="MBDesign-Omnia-App"
+
+# --- ODABIR DISKA (INTERAKTIVNO) ---
+echo "Dostupni diskovi (Storage) na Vašem Proxmoxu:"
+pvesm status | awk 'NR>1 {print "- " $1 " (" $2 ", Slobodno: " $4 ")'
+echo ""
+read -p "Unesite ime Storage-a gdje želite kreirati LXC (zadano: local-lvm): " STORAGE
+STORAGE=${STORAGE:-local-lvm}
 
 # 1. Preuzimanje Debian 12 (Bookworm) template-a ako već ne postoji
 echo "Provjeravam lokalne LXC templateove..."
