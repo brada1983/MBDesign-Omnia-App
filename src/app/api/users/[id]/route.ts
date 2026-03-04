@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
+import { sendEmailNotification } from "@/lib/nodemailer"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -13,7 +14,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     try {
         const body = await req.json()
-        const { name, email, password, role } = body
+        const { name, email, password, role, sendEmail } = body
 
         const updateData: any = {}
 
@@ -35,6 +36,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 role: true,
             }
         })
+
+        if (sendEmail) {
+            const passwordText = (password && password.trim() !== '') ? password : 'Nije promijenjena (koristite staru)'
+            await sendEmailNotification(
+                updateData.email || email,
+                `Vaš račun je ažuriran - Novi podaci`,
+                `<p>Poštovani ${updateData.name || name || ''},</p>
+                 <p>Vaši pristupni podaci za aplikaciju su ažurirani od strane administratora.</p>
+                 <ul>
+                    <li><strong>E-mail:</strong> ${updateData.email || email}</li>
+                    <li><strong>Lozinka:</strong> ${passwordText}</li>
+                 </ul>
+                 <p>Prijavite se na: <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}">Prijavi se</a></p>`
+            )
+        }
 
         return NextResponse.json(updatedUser)
     } catch (error) {

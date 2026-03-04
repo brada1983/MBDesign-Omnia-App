@@ -25,6 +25,7 @@ export function UsersClient() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [role, setRole] = useState('USER')
+    const [sendEmail, setSendEmail] = useState(true)
 
     useEffect(() => {
         fetchUsers()
@@ -48,6 +49,7 @@ export function UsersClient() {
         setEmail('')
         setPassword('')
         setRole('USER')
+        setSendEmail(true) // Default to sending email for new users
         setIsAddModalOpen(true)
     }
 
@@ -57,6 +59,7 @@ export function UsersClient() {
         setEmail(user.email)
         setPassword('') // Empty to signify no change
         setRole(user.role)
+        setSendEmail(false) // Default to NOT sending email on edit
         setIsEditModalOpen(true)
     }
 
@@ -66,7 +69,7 @@ export function UsersClient() {
             const res = await fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, role })
+                body: JSON.stringify({ name, email, password, role, sendEmail })
             })
 
             const data = await res.json()
@@ -87,7 +90,7 @@ export function UsersClient() {
             const res = await fetch(`/api/users/${editingUser.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password: password || undefined, role })
+                body: JSON.stringify({ name, email, password: password || undefined, role, sendEmail })
             })
 
             const data = await res.json()
@@ -196,12 +199,12 @@ export function UsersClient() {
             {/* ADD MODAL */}
             {isAddModalOpen && (
                 <div className="modal-backdrop fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsAddModalOpen(false) }}>
-                    <div className="modal-content" style={{ maxWidth: '500px' }}>
+                    <div className="modal-content" style={{ maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         <div className="modal-header">
                             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Dodaj Novog Korisnika</h2>
                             <button className="button-icon" onClick={() => setIsAddModalOpen(false)}>×</button>
                         </div>
-                        <form className="modal-body" onSubmit={handleCreateUser}>
+                        <form className="modal-body" onSubmit={handleCreateUser} style={{ overflowY: 'auto', flex: 1, paddingBottom: '1rem' }}>
                             <div className="form-group">
                                 <label className="form-label">Ime</label>
                                 <input type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} placeholder="Npr. Ivan Horvat" />
@@ -221,6 +224,21 @@ export function UsersClient() {
                                     <option value="ADMIN">Administrator (ADMIN)</option>
                                 </select>
                             </div>
+
+                            <div className="form-group" style={{ marginTop: '1rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={sendEmail}
+                                        onChange={e => setSendEmail(e.target.checked)}
+                                        style={{ width: '1.25rem', height: '1.25rem', cursor: 'pointer' }}
+                                    />
+                                    <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                                        Pošalji pristupne podatke na e-mail
+                                    </span>
+                                </label>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
                                 <button type="button" className="button" style={{ background: 'transparent', border: '1px solid var(--border-color)' }} onClick={() => setIsAddModalOpen(false)}>Odustani</button>
                                 <button type="submit" className="button button-primary">Spremi</button>
@@ -233,12 +251,12 @@ export function UsersClient() {
             {/* EDIT MODAL */}
             {isEditModalOpen && editingUser && (
                 <div className="modal-backdrop fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsEditModalOpen(false) }}>
-                    <div className="modal-content" style={{ maxWidth: '500px' }}>
+                    <div className="modal-content" style={{ maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         <div className="modal-header">
                             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Uredi Korisnika</h2>
                             <button className="button-icon" onClick={() => setIsEditModalOpen(false)}>×</button>
                         </div>
-                        <form className="modal-body" onSubmit={handleUpdateUser}>
+                        <form className="modal-body" onSubmit={handleUpdateUser} style={{ overflowY: 'auto', flex: 1, paddingBottom: '1rem' }}>
                             <div className="form-group">
                                 <label className="form-label">Ime</label>
                                 <input type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} />
@@ -259,6 +277,21 @@ export function UsersClient() {
                                 </select>
                                 {session?.user?.id === editingUser.id && <small style={{ color: 'var(--text-secondary)' }}>Ne možete mijenjati vlastitu ulogu.</small>}
                             </div>
+
+                            <div className="form-group" style={{ marginTop: '1rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={sendEmail}
+                                        onChange={e => setSendEmail(e.target.checked)}
+                                        style={{ width: '1.25rem', height: '1.25rem', cursor: 'pointer' }}
+                                    />
+                                    <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                                        Pošalji obavijest o izmjeni i nove podatke na e-mail
+                                    </span>
+                                </label>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
                                 <button type="button" className="button" style={{ background: 'transparent', border: '1px solid var(--border-color)' }} onClick={() => setIsEditModalOpen(false)}>Odustani</button>
                                 <button type="submit" className="button button-primary">Spremi Izmjene</button>

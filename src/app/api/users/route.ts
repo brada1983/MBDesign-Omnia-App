@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
+import { sendEmailNotification } from "@/lib/nodemailer"
 
 export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions)
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { name, email, password, role } = body
+        const { name, email, password, role, sendEmail } = body
 
         if (!email || !password) {
             return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
@@ -62,6 +63,21 @@ export async function POST(req: NextRequest) {
                 role: true,
             }
         })
+
+        // Slanje korisniku mail s pristupnim podacima ako je zatraženo
+        if (sendEmail) {
+            await sendEmailNotification(
+                email,
+                `Dobrodošli - Vaši pristupni podaci`,
+                `<p>Poštovani ${name || ''},</p>
+                 <p>Vaš korisnički račun je kreiran. Ovdje su vaši podaci za prijavu:</p>
+                 <ul>
+                    <li><strong>E-mail:</strong> ${email}</li>
+                    <li><strong>Lozinka:</strong> ${password}</li>
+                 </ul>
+                 <p>Molimo prijavite se na sustav klikom na: <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}">Prijavi se</a></p>`
+            )
+        }
 
         return NextResponse.json(newUser, { status: 201 })
     } catch (error) {
