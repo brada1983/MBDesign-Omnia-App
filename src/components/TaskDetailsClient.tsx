@@ -26,6 +26,10 @@ export function TaskDetailsClient({ task, currentUserRole }: { task: any, curren
     // Task Status
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
+    // Send Report
+    const [isSendingReport, setIsSendingReport] = useState(false)
+    const [reportMessage, setReportMessage] = useState<{ text: string, ok: boolean } | null>(null)
+
     // Total Hours Calculated
     const totalHoursLogged = task.timeEntries.reduce((acc: number, entry: any) => acc + (entry.manualHours || 0), 0)
 
@@ -133,6 +137,20 @@ export function TaskDetailsClient({ task, currentUserRole }: { task: any, curren
         })
         setIsUpdatingStatus(false)
         router.refresh()
+    }
+
+    const handleSendReport = async () => {
+        if (!confirm('Poslati radni nalog klijentu na info@omnia.hr?')) return
+        setIsSendingReport(true)
+        setReportMessage(null)
+        const res = await fetch(`/api/tasks/${task.id}/send-report`, { method: 'POST' })
+        if (res.ok) {
+            setReportMessage({ text: 'E-mail uspješno poslan na info@omnia.hr!', ok: true })
+        } else {
+            const d = await res.json()
+            setReportMessage({ text: d.error || 'Greška pri slanju.', ok: false })
+        }
+        setIsSendingReport(false)
     }
 
     return (
@@ -258,6 +276,34 @@ export function TaskDetailsClient({ task, currentUserRole }: { task: any, curren
                                 </button>
                             </div>
                         </div>
+
+                        {/* Send to Client Button - only when ZATVOREN */}
+                        {task.status === 'ZATVOREN' && (
+                            <div className="glass" style={{ padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '1.5rem', borderTop: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.04)' }}>
+                                <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>Pošalji Klijentu</h2>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
+                                    Pošalji sažetak radnog naloga (sati, logovi, detalji) na <strong>info@omnia.hr</strong>.
+                                </p>
+                                {reportMessage && (
+                                    <div style={{
+                                        padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem',
+                                        backgroundColor: reportMessage.ok ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                        color: reportMessage.ok ? '#10b981' : 'var(--danger-color)',
+                                        border: `1px solid ${reportMessage.ok ? '#10b981' : 'var(--danger-color)'}`
+                                    }}>
+                                        {reportMessage.text}
+                                    </div>
+                                )}
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleSendReport}
+                                    disabled={isSendingReport}
+                                    style={{ width: '100%', backgroundColor: '#10b981', fontSize: '0.875rem' }}
+                                >
+                                    {isSendingReport ? 'Slanje...' : '📧 Pošalji radni nalog klijentu'}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="glass" style={{ padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '1.5rem', borderTop: '4px solid var(--secondary-color)' }}>
                             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>Utrošeno Vrijeme</h2>
