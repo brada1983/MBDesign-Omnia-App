@@ -15,7 +15,7 @@ CORES=2                              # Broj CPU jezgri
 MEMORY=4096                          # Količina RAM memorije u MB
 SWAP=512                             # Količina SWAP memorije u MB
 STORAGE="local-lvm"                  # Ime Proxmox storage-a (često local-lvm ili local-zfs)
-DISK_SIZE="64G"                      # Veličina diska
+DISK_SIZE="64"                       # Veličina diska u GB (samo broj)
 NETWORK="name=eth0,bridge=vmbr0,ip=dhcp" # Mrežne postavke (dhcp će automatski dodijeliti IP)
 
 # --- GITHUB POSTAVKE ---
